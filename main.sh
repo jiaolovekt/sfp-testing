@@ -2,7 +2,7 @@
 #
 #  Script information:
 #    This script attempts to brute force an SFP's Vendor Password Using i2c-dev
-#	 Intended platform is a CALIX EX line card to bypass GPON OIM vendor checks on generic optics... because I'm not paying $500 for an OEM SFP dammit
+#    Intended platform is a CALIX EX line card to bypass GPON OIM vendor checks on generic optics... because I'm not paying $500 for an OEM SFP dammit
 #    This script was not created by Calix, please do not contact them with issues! This probably works on other systems too, but I haven't tested it.
 #
 #    Usage: -s 00:00:00:00 = starting string (optional, default 00:00:00:00)
@@ -17,7 +17,7 @@
 #	 If your SFP EEPROM (-p) is at i2c 0x50, then your SFP password entry (-a) should be at 0x51 (or some other address, at the same addr. w/ the temp sensor data), run i2cdump on the address to verify.
 #	 Finding the SFP password entry offset and address is outside the scope of this utility. Refer to your SFP's data-sheet for info.
 #
-#    For Reference - GPON Port 1 is at i2c-2, 0x50. OIM password entry is at i2c-2, 0x51.
+#	 For Reference - GPON Port 1 is at i2c-2, 0x50. OIM password entry is at i2c-2, 0x51.
 
 function usage {
 printf "SFP Password Bruteforce V0

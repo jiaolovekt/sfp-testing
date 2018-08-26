@@ -1,6 +1,6 @@
 # Script information:
-This script attempts to brute force an SFP's Vendor Password Using i2c-dev
-The intended platform is a linux-based netowrk line card, used to unlock an SFP.
+This script attempts to brute force an SFP's vendor password Using i2c-dev.
+The intended platform is a linux-based network line card, used to unlock an SFP.
 Once the SFP is unlocked, you can re-write the EEPROM to bypass vendor checks on generic optics
 
 # Requirements

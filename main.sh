@@ -2,8 +2,8 @@
 #
 #  Script information:
 #    This script attempts to brute force an SFP's Vendor Password Using i2c-dev
-#    Intended platform is a CALIX EX line card to bypass GPON OIM vendor checks on generic optics... because I'm not paying $500 for an OEM SFP dammit
-#    This script was not created by Calix, please do not contact them with issues! This probably works on other systems too, but I haven't tested it.
+#	 Intended platform is a CALIX EX line card to bypass GPON OIM vendor checks on generic optics
+#    This script was not created by Calix, please do not contact them with issues!
 #
 #    Usage: -s 00:00:00:00 = starting string (optional, default 00:00:00:00)
 #	 		-e 11:22:33:44 = ending string (optional, default FF:FF:FF:FF)
@@ -13,11 +13,11 @@
 #			-n {# of password bytes} default 4 (7B-7E)
 #           -? Display usage instructions
 #
-#	 This tool uses i2c-dev, which does not support data addresses, so the i2c address is called directly.
-#	 If your SFP EEPROM (-p) is at i2c 0x50, then your SFP password entry (-a) should be at 0x51 (or some other address, at the same addr. w/ the temp sensor data), run i2cdump on the address to verify.
+#	 This tool uses i2c-dev, which does not support data addresses like a dedicated sfp brute-force board, so the i2c address is called directly.
+#	 If your SFP EEPROM (-p) is at i2c 0x50, then your SFP password entry (-a) should be at 0x51 (at the same addr. w/ the temp sensor data), run i2cdump on the address to verify.
 #	 Finding the SFP password entry offset and address is outside the scope of this utility. Refer to your SFP's data-sheet for info.
 #
-#	 For Reference - GPON Port 1 is at i2c-2, 0x50. OIM password entry is at i2c-2, 0x51.
+#    For Reference - GPON Port 1 is at i2c-2, 0x50. OIM password entry is at i2c-2, 0x51.
 
 function usage {
 printf "SFP Password Bruteforce V0
@@ -106,19 +106,26 @@ ORIG_MFR_BYTE="$(i2cget -y $BUS $PROM_ADDR 20)"
 
 while ! i2cset -y $BUS $PROM_ADDR 20 0xF0 | grep 'readback matched'
 do
+
     j=0
     #We need individual bytes because i2cset doesn't support multiple bytes at once. The first number is at pos 3.
+
     for (( c = 3; c <= $NB_MULT; c+=2 )) do
-        THIS_PASS_TO_BYTES=0x"$(printf %0${NB_TWOX}x $((${INIT_PASS_LIT})))"
+        if [ "$c" == "3" ]
+        then
+            THIS_PASS_TO_BYTES=0x"$(printf %0${NB_TWOX}x $((${INIT_PASS_LIT})))"
+        fi
         let j=($c+1)
         let k=($c-3)/2
         let DATA_ADDR=($DATA_START + $k)
         THIS_BYTE[c]="$(echo ${THIS_PASS_TO_BYTES} | cut -c ${c}-${j})"
-        i2cset -y $BUS $I2CADDR $DATA_ADDR "0x${THIS_BYTE[c]}"
+        i2cset -y $BUS $I2CADDR $DATA_ADDR "0x${THIS_BYTE[c]}" > /dev/null
     done
-    echo -ne "  SFP Bruteforce Running: ${THIS_BYTE[3]} ${THIS_BYTE[5]} ${THIS_BYTE[7]} ${THIS_BYTE[9]}"\\r
+    echo -ne "  SFP Bruteforce Running: ${THIS_BYTE[*]}"\\r
+
 	if (( $INIT_PASS_LIT >= $MAX_PASS_LIT ))
 	then
+        echo -en "\007"
         echo "
   ERROR: The password could not be found in the given range"
 		exit 1;
@@ -127,7 +134,8 @@ do
 done
 
 #Found It
+echo -en "\007"
 echo "
-DONE. The password is: ${THIS_BYTE[3]} ${THIS_BYTE[5]} ${THIS_BYTE[7]} ${THIS_BYTE[9]}"\\n
+DONE. The password is: ${THIS_BYTE[*]}"
 i2cset -y $BUS $PROM_ADDR 20 $ORIG_MFR_BYTE
 exit 0;

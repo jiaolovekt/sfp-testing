@@ -13,9 +13,9 @@
 #			-n {# of password bytes} default 4 (7B-7E)
 #           -? Display usage instructions
 #
-#	 This tool uses i2c-dev, which does not support data addresses like a dedicated sfp brute-force board, so the i2c address is called directly.
-#	 If your SFP EEPROM (-p) is at i2c 0x50, then your SFP password entry (-a) should be at 0x51 (at the same addr. w/ the temp sensor data), run i2cdump on the address to verify.
-#	 Finding the SFP password entry offset and address is outside the scope of this utility. Refer to your SFP's data-sheet for info.
+#    i2c-dev does not support data addresses like a dedicated sfp brute-force board, so the i2c address is called directly.
+#    If your SFP EEPROM (-p) is at i2c 0x50, then your SFP password entry (-a) should be at 0x51 (at the same addr. w/ the temp sensor data), run i2cdump on the address to verify.
+#    Finding the SFP password entry offset and address is outside the scope of this utility. Refer to your SFP's data-sheet for info.
 #
 #    For Reference - GPON Port 1 is at i2c-2, 0x50. OIM password entry is at i2c-2, 0x51.
 
@@ -37,9 +37,6 @@ if [[($@ == "--help") ||  ($@ == "-h")||  ($@ == "-?") || (${#@} == 0)]]
 then
     usage
 fi
-
-#Install the i2c-dev module. This might change depending on your platform
-insmod /opt/calix/current/modules/ppc8544/i2c-dev.ko
 
 #Set Up Vars
 while [ "$1" != "" ]; do
@@ -99,9 +96,12 @@ then
     DATA_START=0x7B
 fi
 
+#Install the i2c-dev module. This might change depending on the platform
+insmod /opt/calix/current/modules/ppc8544/i2c-dev.ko
+
 #Begin Brute Force. We will attempt to set the first MFR byte until it works. When it works, we will set it back to the original value and output the password.
-#I'll consider manipulating this byte generally safe, because it's assumed the original brand is known, so the user can recover this byte manually if needed.
-#This should be safer than writing the user space which may be occupied with unknown data.
+#I'll consider manipulating this byte generally safe, because it's assumed the original brand is known, so the user can recover this byte manually if desired.
+#This should be safer than writing the user space which may be already unlocked, or occupied with unknown data.
 ORIG_MFR_BYTE="$(i2cget -y $BUS $PROM_ADDR 20)"
 
 while ! i2cset -y $BUS $PROM_ADDR 20 0xF0 | grep 'readback matched'
@@ -125,6 +125,8 @@ do
 
 	if (( $INIT_PASS_LIT >= $MAX_PASS_LIT ))
 	then
+        #Failed - reset to original byte just in case.
+        i2cset -y $BUS $PROM_ADDR 20 $ORIG_MFR_BYTE
         echo -en "\007"
         echo "
   ERROR: The password could not be found in the given range"

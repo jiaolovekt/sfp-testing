@@ -20,7 +20,7 @@
 #    For Reference - GPON Port 1 is at i2c-2, 0x50. OIM password entry is at i2c-2, 0x51.
 
 function usage {
-printf "SFP Password Bruteforce V0
+printf "SFP Password Bruteforce V1
 This script attempts to brute force an SFP's EEPROM password using i2c-dev. See script source for more info.
 Usage: -b {i2c-bus number}
        -a {i2c p/w hex address, Ex: 0x51}
@@ -97,19 +97,20 @@ then
 fi
 
 #Install the i2c-dev module. This might change depending on the platform
-insmod /opt/calix/current/modules/ppc8544/i2c-dev.ko
+insmod /opt/calix/current/modules/ppc8544/i2c-dev.ko >/dev/null 2>&1
 
 #Begin Brute Force. We will attempt to set the first MFR byte until it works. When it works, we will set it back to the original value and output the password.
 #I'll consider manipulating this byte generally safe, because it's assumed the original brand is known, so the user can recover this byte manually if desired.
 #This should be safer than writing the user space which may be already unlocked, or occupied with unknown data.
 ORIG_MFR_BYTE="$(i2cget -y $BUS $PROM_ADDR 20)"
 
-while ! i2cset -y $BUS $PROM_ADDR 20 0xF0 | grep 'readback matched'
+TEST="$(i2cset -y $BUS $PROM_ADDR 20 0x01 b 2>&1 >/dev/null | grep 'Warning')"
+
+while [[ ${TEST} > 0 ]]
 do
 
     j=0
-    #We need individual bytes because i2cset doesn't support multiple bytes at once. The first number is at pos 3.
-
+    #We need individual bytes because this might not work with multiple bytes at once. The first number is at pos 3.
     for (( c = 3; c <= $NB_MULT; c+=2 )) do
         if [ "$c" == "3" ]
         then
@@ -118,26 +119,34 @@ do
         let j=($c+1)
         let k=($c-3)/2
         let DATA_ADDR=($DATA_START + $k)
-        THIS_BYTE[c]="$(echo ${THIS_PASS_TO_BYTES} | cut -c ${c}-${j})"
-        i2cset -y $BUS $I2CADDR $DATA_ADDR "0x${THIS_BYTE[c]}" > /dev/null
+        THIS_BYTE[c]=0x"$(echo ${THIS_PASS_TO_BYTES} | cut -c ${c}-${j})"
+        i2cset -y $BUS $I2CADDR $DATA_ADDR "${THIS_BYTE[c]}" > /dev/null 2>&1
     done
+    
+    #testing with sending a block.
+    #CALIX EX does not support this!
+    # echo i2cset -y $BUS $I2CADDR $DATA_ADDR "${THIS_BYTE[*]} i"
+    
     echo -ne "  SFP Bruteforce Running: ${THIS_BYTE[*]}"\\r
 
 	if (( $INIT_PASS_LIT >= $MAX_PASS_LIT ))
 	then
         #Failed - reset to original byte just in case.
-        i2cset -y $BUS $PROM_ADDR 20 $ORIG_MFR_BYTE
+        i2cset -y $BUS $PROM_ADDR 20 $ORIG_MFR_BYTE b >/dev/null 2>&1
         echo -en "\007"
         echo "
   ERROR: The password could not be found in the given range"
 		exit 1;
 	fi
 	let INIT_PASS_LIT=($INIT_PASS_LIT + 1);
+	
+	#give the device time to process
+	#sleep 0.015
 done
 
 #Found It
 echo -en "\007"
 echo "
 DONE. The password is: ${THIS_BYTE[*]}"
-i2cset -y $BUS $PROM_ADDR 20 $ORIG_MFR_BYTE
+i2cset -y $BUS $PROM_ADDR 20 $ORIG_MFR_BYTE b >/dev/null 2>&1
 exit 0;

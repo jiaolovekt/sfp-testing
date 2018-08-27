@@ -33,6 +33,9 @@ branding is off
 Alarm CLEARED for GPON port "2/1" at 1970/06/12 07:32:43.96:
     "Unsupported Equipment"
     
+Your third party GPON SFP is now enabled by the OLT. You should see a registration from your ONT if the SFP is compatible :)
+    
+    
 ----------------------------------------------------------
 Other commands
 /mt/backplane, /mt/cpld/sc/relay, /mt/cpld, /mt/fantray

@@ -1,0 +1,56 @@
+Bypassing SFP checks on a calix E-series LC, misc debug
+------------------------------------------------------------
+root@localhost:~# telnet localhost 23
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+"CalixE7" Fri Jun 12 08:01:15 1970
+Username: e7support
+Password: admin
+
+Issue command "debug" to enter debug shell
+CalixE7>debug
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+Calix E5 Debug Interface
+
+CalixE7:1.2:> help /mt/card
+alarm      - Control alarm i/o pins.
+bid        - Display card BID.
+hwwd       - Stop punching hardware watchdog.
+led        - Set led states.
+segfault   - Crash with a segmentation fault.
+temperature - Display card temperatures.
+version    - show currently running version.
+branding   - Enable, disable, or display checking for SFP+/XFP branding.
+sfp        - Display card BID.
+supported  - Enable or disable checking for supported SFPs.
+
+CalixE7:1.2:> /mt/card/supported off
+CalixE7:1.2:> /mt/card/branding off     
+branding is off
+Alarm CLEARED for GPON port "2/1" at 1970/06/12 07:32:43.96:
+    "Unsupported Equipment"
+    
+----------------------------------------------------------
+Other commands
+/mt/backplane, /mt/cpld/sc/relay, /mt/cpld, /mt/fantray
+
+Force enable PON TX
+CalixE7:1.2:> gpon/trm ponena 0 en
+
+Simulation - Force In-service
+CalixE7:1.2:>gponsim/simgts forcesfp 0 IS 
+
+Light Monitor, Lab SFP Under Testing
+CalixE7:1.2:> gpon/oom light monitor labsfp 0 yes
+
+-----------------------------------------------------------
+ONT Debugging
+CalixE7:1.2:> gpon/ontshell 0 1
+
+-----------------------------------------------------------
+SSH to card
+CalixE7>shell card <card #>
+-> root / root

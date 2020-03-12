@@ -56,10 +56,13 @@ CalixE7:1.2:> gpon/ontshell 0 1
 -----------------------------------------------------------
 SSH to card
 CalixE7>shell card <card #>
--> root / root
+-> root / root 
 
 
 
 Calix E9 / AXOS
-- Disable Global Branding (from root shell)
+- Disable Global Branding (from root shell). 
+
 dcli ifmgrd set global branding disable
+
+Note the root shell is available on internal releases only, otherwise use calixsupport on first login, then open shell w/ role pwd.
